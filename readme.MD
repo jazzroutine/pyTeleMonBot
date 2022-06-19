@@ -11,8 +11,8 @@
   * [Project folder](#project-folder)
   * [Requirements and virtualenv](#requirements-and-virtualenv)
   * [Service creation](#service-creation)
-  * [Matrix DB configutarion](matrix-db-configutarion)
-  * [NextCloud configutarion](nextcloud-configutarion)
+  * [Matrix DB configuration](matrix-db-configuration)
+  * [NextCloud configuration](nextcloud-configuration)
 
 ## Getting started
 
@@ -59,8 +59,12 @@ For main project folder we will use `/opt/pyTeleMonBot`
 ```
 $ sudo mkdir /opt/pyTeleMonBot
 ```
+Additionally we need to create data folder for future use:
+```
+$ sudo mkdir /opt/pyTeleMonBot/.data
+```
 
-After folder creation, let's set correct security permissions:
+After folders creation, let's set correct security permissions:
 ```
 $ sudo chown -R pyTeleMonBot /opt/pyTeleMonBot
 $ sudo chgrp -R pyTeleMonBot_users /opt/pyTeleMonBot
@@ -115,7 +119,7 @@ After=multi-user.target
 [Service]
 Type=simple
 
-ExecStart=/bin/bash /opt/pyTeleMonBot/run.sh
+ExecStart=/bin/bash /opt/pyTeleMonBot/service_run.sh
 ExecStop=/bin/kill -15 $MAINPID
 
 User=pyTeleMonBot
@@ -140,10 +144,10 @@ $ sudo systemctl enable pyTeleMonBot.service
 
 Starter shell script creation:
 ```
-$ nano /opt/pyTeleMonBot/run.sh
+$ nano /opt/pyTeleMonBot/service_run.sh
 ``` 
 
-run.sh:
+service_run.sh:
 ```
 #!/bin/bash
 # Shell wrapper script to activate virtual environment
@@ -155,10 +159,10 @@ python3 /opt/pyTeleMonBot/main.py
 
 Make executable:
 ```
-$ sudo chmod +x /opt/pyTeleMonBot/run.sh
+$ sudo chmod +x /opt/pyTeleMonBot/service_run.sh
 ```
 
-### Matrix DB configutarion
+### Matrix DB configuration
 
 We need to configure local Synapse Postgres DB and create local read-only user for bot to use.
 
@@ -184,21 +188,40 @@ GRANT SELECT ON public."users" TO pyTeleMonBot_ro_user;
 Now we have **pyTeleMonBot_ro_user** with right to read users table from local Synapse DB.
 
 
-### NextCloud configutarion
+### NextCloud configuration
 
 I my case, I have NextCloud in SNAP container and it's very complicated to work with NextCloud DB directly. So I made simple cron job to make NextCloud folder listing and put it in pyTeleMonBot .data folder.
 
+Let's create shell script for cron to use:
+```
+$ nano /opt/pyTeleMonBot/cron_audit_folders.sh
+```
 
+cron_audit_folders.sh:
+```
+#!/bin/bash
+# Shell script to read folders properties and write them to file
+# Used by cron every hour
 
+sudo du --time --max-depth=1 /var/snap/nextcloud/common/nextcloud/data | sort -nr > /opt/pyTeleMonBot/.data/usage.txt
+```
 
+This script runs under sudo, so make sure your Ubuntu is ready for this. 
 
+Don't forget to make it executable:
+```
+$ sudo chmod +x /opt/pyTeleMonBot/cron_audit_folders.sh
+```
 
+Now let's make new cron job and set it to run our script every hour:
+```
+$ sudo crontab -e
+```
 
-
-
-
-
-
+Add this to the end:
+```
+0 */1 * * * /opt/pyTeleMonBot/cron_audit_folders.sh
+```
 
 
 
