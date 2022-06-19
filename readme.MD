@@ -1,8 +1,9 @@
 
-# <p align="center">pyTeleMonBot
+# pyTeleMonBot
 
-<p align="center">Simple Telegram bot for server monitoring made with <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>.</p>
-<p align="center">Initially made for <a href="https://matrix.org/docs/projects/server/synapse">Matrix Synapse</a> and <a href="https://nextcloud.com/">NextCloud</a> servers.</p>
+Simple Telegram bot for server monitoring made with <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>.
+
+Initially made for <a href="https://matrix.org/docs/projects/server/synapse">Matrix Synapse</a> and <a href="https://nextcloud.com/">NextCloud</a> servers with secure access to all bot functions.
 
 ## Contents
 
@@ -11,8 +12,13 @@
   * [Project folder](#project-folder)
   * [Requirements and virtualenv](#requirements-and-virtualenv)
   * [Service creation](#service-creation)
-  * [Matrix DB configuration](matrix-db-configuration)
-  * [NextCloud configuration](nextcloud-configuration)
+  * [Matrix DB configuration](#matrix-db-configuration)
+  * [NextCloud configuration](#nextcloud-configuration)
+* [General use](#general-use)
+  * [First start](#first-start)
+  * [Inline commands](#inline-commands)
+  * [Monitoring jobs](#monitoring-jobs)
+* [Final thoughts](#final-thoughts)
 
 ## Getting started
 
@@ -223,6 +229,68 @@ Add this to the end:
 0 */1 * * * /opt/pyTeleMonBot/cron_audit_folders.sh
 ```
 
+## General use
+
+Bot's `main.py` file basicly consists of two major parts: inline commands handlers and asyncio monitoring jobs. 
+But before that, let's fill out configuration file and start bot service.
+
+### First start
+
+Before service start, you need to change `.env` file and fill it with your configuration:
+* API_KEY - you bot API key from BotFather
+* LIST_OF_USERS - List of user who can send inline commands to bot
+* LIST_OF_USERS_CHATS - list of chats ID to sent bot's monitoring messages 
+
+* DB_1_PASS - Matrix Synapse read only user password
+
+Without your Telegram account and chat ID to appropriate lists, you will be unable to interact with the bot. 
+
+Now we can start the bot:
+```
+$ sudo service pyTeleMonBot start
+```
+
+### Inline commands
+
+Beside form /start initialization command, all other commands are very self-explanatory:
+
+* /status - Ask all monitored services for their status. 
+* /server - Basic server OS info
+
+* /matrix - List of Matrix users and their registration date in UTC+3 timezone
+* /nextcloud - List of NextCloud users based on service folder tree and their used space 
+
+* /id - current chat ID
+* /bot_users - List of users who can send commands to bot
+* /help - Help message
+
+### Monitoring jobs
+
+This is the most complicated part. 
+
+Bot is working in asynchronous mode and beside inline handlers, it's containing dedicated jobs to monitor internal services.
+
+Job list:
+* monitor_service1 - Matrix main web page check (every 5 minutes)
+* monitor_service2 - Matrix main python service check (every 5 minutes)
+* monitor_service3 - Matrix postgres DB connection check (every 5 minutes)
+* monitor_service4 - Matrix postgres DB new user alert (every 2 minutes)
+* monitor_service5 - NextCloud main web page check (every 5 minutes)
+* monitor_service10 - Recent server reboot check (every 5 minutes)
+
+Additionally `monitor_service4` exports Matrix users in to local file for further use in external monitoring. 
 
 
+## Final thoughts
 
+Initially, this project was created only for the one service monitoring purposes, but over time, has grown into a rather large bot with different ways of interacting.
+
+My Python skill are very limited and I'm sure there are a lots of poor code examples here, but I did my best.
+I hope this project will help someone to monitor their servers and services, or be just a starting point to create your own bot for different purposes.
+
+And sorry for my terrible English, it's not my native language, but I hope this readme and code comments were readable.
+
+**Special thanks to:**
+
+* <a href="https://febimudiyanto.medium.com/">Febi Mudiyanto</a> from Medium for <a href="https://python.plainenglish.io/monitoring-server-with-telegram-bot-and-python-b39d0a384fab">his great article</a> about pyTelegramBotAPI monitoring bot!
+* <a href="https://github.com/eternnoir">eternnoir</a> for <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a> very straightforward documentation with lots of examples!
