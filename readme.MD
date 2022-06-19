@@ -1,0 +1,1 @@
+Simple Telegram bot for server monitoring
